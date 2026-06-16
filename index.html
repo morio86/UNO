@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>UNO</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="title-screen" class="screen">
+  <div class="title-logo">
+    <h1>UNO</h1>
+    <p class="subtitle">マルチプレイバトル</p>
+  </div>
+
+  <div class="mode-block">
+    <p class="mode-title">CPU対戦（CPUの数を選択）</p>
+    <div class="player-select">
+      <button data-mode="cpu" data-num="1"><span class="num">1</span><span class="txt">人</span></button>
+      <button data-mode="cpu" data-num="2"><span class="num">2</span><span class="txt">人</span></button>
+      <button data-mode="cpu" data-num="3"><span class="num">3</span><span class="txt">人</span></button>
+    </div>
+  </div>
+
+  <div class="mode-block">
+    <p class="mode-title">同じ端末で対戦（かわりばんこプレイ）</p>
+    <div class="player-select">
+      <button data-mode="local" data-num="2" class="wide-btn"><span class="num">2</span><span class="txt">人で対戦</span></button>
+    </div>
+  </div>
+
+  <div class="mode-block">
+    <p class="mode-title">テーブルの背景</p>
+    <div class="bg-select">
+      <button class="bg-btn" data-bg="purple"></button>
+      <button class="bg-btn" data-bg="green"></button>
+      <button class="bg-btn" data-bg="wood"></button>
+      <button class="bg-btn" data-bg="blue"></button>
+    </div>
+  </div>
+
+  <div class="mode-block">
+    <button id="rules-btn" class="rules-open-btn">⚙️ ルール設定</button>
+  </div>
+</div>
+
+<div id="game-screen" class="screen hidden">
+  <button id="pause-btn">⏸</button>
+  <div id="turn-banner"></div>
+  <div id="rule-indicators" class="hidden"></div>
+
+  <div id="other-players"></div>
+
+  <div id="center-area">
+    <div class="pile-wrap">
+      <div id="draw-pile" class="card card-back"></div>
+      <span id="draw-count" class="pile-count">0</span>
+    </div>
+    <div class="pile-wrap">
+      <div id="discard-pile"></div>
+    </div>
+  </div>
+
+  <div id="status-bar">
+    <span id="direction-indicator">→</span>
+  </div>
+
+  <div id="pending-draw-banner" class="hidden">
+    <span>🃏 ドロー <strong id="pending-draw-num">0</strong> 枚待ち！</span>
+  </div>
+
+  <div id="action-area">
+    <button id="play-btn" class="hidden">出す</button>
+    <button id="uno-btn">UNO!</button>
+  </div>
+
+  <div id="hand-area"></div>
+</div>
+
+<div id="pause-overlay" class="dialog hidden">
+  <div class="dialog-box pause-box">
+    <h2 class="pause-title">⏸ 一時停止</h2>
+    <button id="pause-resume">▶ ゲームに戻る</button>
+    <button id="pause-quit">🏠 タイトルに戻る</button>
+  </div>
+</div>
+
+<div id="color-dialog" class="dialog hidden">
+  <div class="dialog-box">
+    <p>色を選んでください</p>
+    <div class="color-choices">
+      <button class="color-btn" data-color="red"></button>
+      <button class="color-btn" data-color="yellow"></button>
+      <button class="color-btn" data-color="green"></button>
+      <button class="color-btn" data-color="blue"></button>
+    </div>
+    <button id="color-back">戻る</button>
+  </div>
+</div>
+
+<div id="challenge-dialog" class="dialog hidden">
+  <div class="dialog-box">
+    <p id="challenge-text"></p>
+    <div class="challenge-choices">
+      <button id="challenge-yes">チャレンジする</button>
+      <button id="challenge-no">そのまま引く</button>
+    </div>
+  </div>
+</div>
+
+<div id="pass-overlay" class="dialog hidden">
+  <div class="dialog-box">
+    <p id="pass-text"></p>
+    <button id="pass-ok">手札を見る</button>
+  </div>
+</div>
+
+<div id="swap-dialog" class="dialog hidden">
+  <div class="dialog-box">
+    <p>手札を交換する相手を選んでください</p>
+    <div id="swap-choices"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div id="result-screen" class="screen hidden">
+  <h2 id="result-title"></h2>
+  <div id="result-list"></div>
+  <button id="restart-btn">もう一度プレイ</button>
+</div>
+
+<div id="rules-panel" class="rules-panel hidden">
+  <div class="rules-panel-box">
+    <h2 class="rules-panel-title">ルール設定</h2>
+    <p class="rules-base-note">📋 公式UNOルールをベースとします</p>
+    <p class="rules-local-title">ローカルルール（オプション）</p>
+
+    <div class="rule-row">
+      <div class="rule-info">
+        <span class="rule-icon">🔢</span>
+        <div>
+          <div class="rule-name">同じ数字複数出し</div>
+          <div class="rule-desc">同じ数字のカードを複数枚同時に出せる</div>
+        </div>
+      </div>
+      <label class="switch"><input type="checkbox" id="rule-stackSameNumber"><span class="slider"></span></label>
+    </div>
+
+    <div class="rule-row">
+      <div class="rule-info">
+        <span class="rule-icon">➕</span>
+        <div>
+          <div class="rule-name">ドロー重ね</div>
+          <div class="rule-desc">+2/+4の上にさらに重ねて出せる</div>
+        </div>
+      </div>
+      <label class="switch"><input type="checkbox" id="rule-drawStacking"><span class="slider"></span></label>
+    </div>
+
+    <div class="rule-row">
+      <div class="rule-info">
+        <span class="rule-icon">🔄</span>
+        <div>
+          <div class="rule-name">0で手札ローテーション</div>
+          <div class="rule-desc">0を出すと全員の手札が回る</div>
+        </div>
+      </div>
+      <label class="switch"><input type="checkbox" id="rule-zeroRotate"><span class="slider"></span></label>
+    </div>
+
+    <div class="rule-row">
+      <div class="rule-info">
+        <span class="rule-icon">🔃</span>
+        <div>
+          <div class="rule-name">7で手札交換</div>
+          <div class="rule-desc">7を出したら好きな相手と手札交換</div>
+        </div>
+      </div>
+      <label class="switch"><input type="checkbox" id="rule-sevenSwap"><span class="slider"></span></label>
+    </div>
+
+    <button id="rules-close">閉じる</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
