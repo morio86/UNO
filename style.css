@@ -901,3 +901,114 @@ body.bg-blue {
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255,255,255,0.3);
 }
+
+/* ---------- UNO Button Declared State ---------- */
+#uno-btn.uno-declared {
+  background: linear-gradient(135deg, #43a047, #1b5e20);
+  box-shadow: 0 5px 0 rgba(0,0,0,0.3), 0 0 18px rgba(67,160,71,0.7);
+  animation: unoDeclaredPulse 0.7s ease infinite alternate;
+}
+
+@keyframes unoDeclaredPulse {
+  from { box-shadow: 0 5px 0 rgba(0,0,0,0.3), 0 0 10px rgba(67,160,71,0.5); }
+  to   { box-shadow: 0 5px 0 rgba(0,0,0,0.3), 0 0 26px rgba(67,160,71,0.9); }
+}
+
+/* ---------- UNO Effect Overlay ---------- */
+.uno-effect {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.2);
+  font-size: 80px;
+  font-weight: 900;
+  font-style: italic;
+  color: #ffeb3b;
+  text-shadow: 0 0 20px rgba(255,235,59,0.9), 4px 4px 0 #e65100, -2px -2px 0 #b71c1c;
+  pointer-events: none;
+  z-index: 200;
+  animation: unoExplode 0.85s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+@keyframes unoExplode {
+  0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+  30%  { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+  55%  { transform: translate(-50%, -50%) scale(0.95); opacity: 1; }
+  75%  { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; }
+}
+
+/* ---------- Confetti ---------- */
+.confetti-piece {
+  position: fixed;
+  top: -40px;
+  font-size: 26px;
+  pointer-events: none;
+  z-index: 300;
+  animation: confettiFall linear forwards;
+}
+
+@keyframes confettiFall {
+  0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg) scale(0.5); opacity: 0; }
+}
+
+/* ---------- Result Screen (improved) ---------- */
+#result-screen {
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.win-title {
+  font-size: 44px;
+  color: #ffeb3b;
+  text-shadow: 0 0 24px rgba(255,235,59,0.8), 3px 3px 0 #e65100;
+  animation: winTitlePulse 1s ease infinite alternate;
+  margin: 0;
+}
+
+.lose-title {
+  font-size: 34px;
+  color: #ef9a9a;
+  text-shadow: 2px 2px 0 #7f0000;
+  margin: 0;
+}
+
+@keyframes winTitlePulse {
+  from { transform: scale(1);    text-shadow: 0 0 16px rgba(255,235,59,0.6), 3px 3px 0 #e65100; }
+  to   { transform: scale(1.06); text-shadow: 0 0 36px rgba(255,235,59,1),   3px 3px 0 #e65100; }
+}
+
+#result-list {
+  background: rgba(0,0,0,0.25);
+  border-radius: 12px;
+  padding: 16px 20px;
+  width: 100%;
+  max-width: 320px;
+  box-sizing: border-box;
+}
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  font-size: 15px;
+  gap: 12px;
+}
+
+.result-row:last-child { border-bottom: none; }
+
+.result-row.result-winner {
+  background: rgba(255,235,59,0.15);
+  border-radius: 8px;
+  padding: 10px 8px;
+  border-bottom: none;
+  margin-bottom: 4px;
+}
+
+.result-name { font-weight: bold; }
+.result-score { color: rgba(255,255,255,0.75); font-size: 13px; white-space: nowrap; }

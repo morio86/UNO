@@ -368,6 +368,7 @@ function renderStatus() {
   const canDeclare = !awaitingPass && !player.isCPU && !player.unoDeclared &&
     (player.hand.length === 1 || player.hand.length === 2);
   unoBtn.disabled = !canDeclare;
+  unoBtn.classList.toggle('uno-declared', !!player.unoDeclared);
 
   if (pendingPlay.length > 0) {
     playBtn.classList.remove('hidden');
@@ -625,9 +626,32 @@ unoBtn.addEventListener('click', () => {
   if (gameOver || awaitingPass || player.isCPU) return;
   if (player.hand.length === 1 || player.hand.length === 2) {
     player.unoDeclared = true;
+    showUnoEffect();
     render();
   }
 });
+
+function showUnoEffect() {
+  const el = document.createElement('div');
+  el.className = 'uno-effect';
+  el.textContent = 'UNO!';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 900);
+}
+
+function showConfetti() {
+  const emojis = ['🎉', '⭐', '🏆', '✨', '🌟', '🎊', '💫', '🃏'];
+  for (let i = 0; i < 24; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.style.left = (Math.random() * 100) + 'vw';
+    el.style.animationDelay = (Math.random() * 1.8) + 's';
+    el.style.fontSize = (16 + Math.random() * 22) + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4500);
+  }
+}
 
 // ============ Draw card animation ============
 function animateDrawCard(callback) {
@@ -929,19 +953,29 @@ function endGame(winnerIndex) {
   gameScreen.classList.add('hidden');
   resultScreen.classList.remove('hidden');
 
-  resultTitle.textContent = `${players[winnerIndex].name} の勝ち！`;
+  const humanPlayer = players.find(p => !p.isCPU) || players[0];
+  const humanWon = winnerIndex === humanPlayer.id;
+
+  resultTitle.textContent = humanWon ? '🏆 あなたの勝ち！' : `😢 ${players[winnerIndex].name} の勝ち`;
+  resultTitle.className = humanWon ? 'win-title' : 'lose-title';
 
   resultList.innerHTML = '';
-  for (const p of players) {
-    const line = document.createElement('div');
-    if (p.id === winnerIndex) {
-      line.textContent = `${p.name}: 手札 0枚（勝者）`;
-    } else {
-      const score = p.hand.reduce((sum, c) => sum + cardScore(c), 0);
-      line.textContent = `${p.name}: 手札 ${p.hand.length}枚（${score}点）`;
-    }
-    resultList.appendChild(line);
-  }
+  const sorted = [...players].sort((a, b) => {
+    if (a.id === winnerIndex) return -1;
+    if (b.id === winnerIndex) return 1;
+    return a.hand.reduce((s, c) => s + cardScore(c), 0) - b.hand.reduce((s, c) => s + cardScore(c), 0);
+  });
+
+  sorted.forEach((p, rank) => {
+    const row = document.createElement('div');
+    row.className = 'result-row' + (p.id === winnerIndex ? ' result-winner' : '');
+    const score = p.hand.reduce((sum, c) => sum + cardScore(c), 0);
+    const medal = ['🥇', '🥈', '🥉'][rank] || '　';
+    row.innerHTML = `<span class="result-name">${medal} ${p.name}</span><span class="result-score">${p.id === winnerIndex ? '0点（勝者！）' : `${score}点（${p.hand.length}枚）`}</span>`;
+    resultList.appendChild(row);
+  });
+
+  if (humanWon) showConfetti();
 }
 
 function cardScore(card) {
