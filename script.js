@@ -332,25 +332,37 @@ function renderHand() {
   player.hand.forEach((card, idx) => {
     const el = makeCardElement(card, false);
 
-    if (!isMyTurn) {
-      el.classList.add('disabled');
-    } else if (inDrawStack) {
-      if (isDrawResponse(card)) {
-        // playable as a response
-      } else {
-        el.classList.add('disabled');
-      }
-    } else if (pendingPlay.includes(idx)) {
+    if (pendingPlay.includes(idx)) {
       el.classList.add('selected-card');
     } else if (firstSelected) {
       const canAdd = card.type === 'number' && card.value === firstSelected.value && cardMatches(card);
-      el.classList.add(canAdd ? 'addable' : 'disabled');
-    } else {
-      const playable = pendingWildCard === null && cardMatches(card);
-      if (!playable) el.classList.add('disabled');
+      if (canAdd) el.classList.add('addable');
     }
 
+    // Desktop click
     el.addEventListener('click', () => onHandCardClick(idx));
+
+    // Touch: hold to preview (enlarge), swipe up to play
+    let touchStartY = 0;
+    let touchStartX = 0;
+    el.addEventListener('touchstart', (e) => {
+      touchStartY = e.touches[0].clientY;
+      touchStartX = e.touches[0].clientX;
+      el.classList.add('touch-active');
+      e.preventDefault();
+    }, { passive: false });
+    el.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+    }, { passive: false });
+    el.addEventListener('touchend', (e) => {
+      el.classList.remove('touch-active');
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (dy < -40 && Math.abs(dx) < 70) {
+        onHandCardClick(idx);
+      }
+    });
+
     handArea.appendChild(el);
   });
 }
