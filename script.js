@@ -14,6 +14,7 @@ let pendingPlay = [];       // indices of number cards staged for multi-card pla
 let pendingWild4Challenge = null; // set when CPU plays wild_draw4 targeting human
 let gameOver = false;
 let awaitingPass = false;   // true while waiting for the next human player to tap "see hand"
+let awaitingDrawPlay = false; // true after human drew forced card that is playable
 let gamePaused = false;
 
 // Draw stacking state
@@ -107,6 +108,7 @@ function startGame(numPlayers, mode) {
   pendingPlay = [];
   pendingWild4Challenge = null;
   awaitingPass = false;
+  awaitingDrawPlay = false;
   pendingDrawCount = 0;
   pendingDrawType = null;
 
@@ -319,10 +321,12 @@ function makeCardElement(card, isOnPile) {
 
 function renderHand() {
   handArea.innerHTML = '';
+  handArea.classList.remove('uno-active');
   if (gameOver || awaitingPass) return;
 
   const viewer = viewerIndex();
   const player = players[viewer];
+  if (player.unoDeclared) handArea.classList.add('uno-active');
   const isMyTurn = viewer === currentPlayer;
   const firstSelected = pendingPlay.length > 0 ? player.hand[pendingPlay[0]] : null;
 
@@ -381,6 +385,12 @@ function renderStatus() {
     (player.hand.length === 1 || player.hand.length === 2);
   unoBtn.disabled = !canDeclare;
   unoBtn.classList.toggle('uno-declared', !!player.unoDeclared);
+
+  const unoReach = document.getElementById('uno-reach');
+  if (unoReach) {
+    const viewerDeclared = !awaitingPass && !players[viewerIndex()].isCPU && players[viewerIndex()].unoDeclared;
+    unoReach.classList.toggle('hidden', !viewerDeclared);
+  }
 
   if (pendingPlay.length > 0) {
     playBtn.classList.remove('hidden');
@@ -484,7 +494,7 @@ function advanceTurnFlow() {
   const player = players[currentPlayer];
   if (player.isCPU) {
     setTimeout(cpuTurn, 700);
-  } else if (!player.hand.some(c => cardMatches(c))) {
+  } else if (!awaitingDrawPlay && !player.hand.some(c => cardMatches(c))) {
     setTimeout(() => handleNoPlayableTurn(currentPlayer), 600);
   }
 }
@@ -695,6 +705,16 @@ function animateDrawCard(callback) {
   setTimeout(() => { anim.remove(); callback(); }, 500);
 }
 
+// ============ Pass visual effect ============
+function showPassEffect(playerIndex) {
+  const isViewer = playerIndex === viewerIndex();
+  const el = document.createElement('div');
+  el.className = 'pass-effect ' + (isViewer ? 'pass-bottom' : 'pass-top');
+  el.textContent = (isViewer ? '' : players[playerIndex].name + ' ') + 'パス';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+}
+
 // ============ Auto-draw when no playable card ============
 function handleNoPlayableTurn(playerIndex) {
   if (gamePaused) return;
@@ -705,16 +725,17 @@ function handleNoPlayableTurn(playerIndex) {
     render();
 
     if (drawn && cardMatches(drawn)) {
-      // Add just-drawn glow to the last card in hand
-      const cards = handArea.querySelectorAll('.card');
-      if (cards.length > 0) {
-        cards[cards.length - 1].classList.add('just-drawn');
+      if (player.isCPU) {
+        // CPU auto-plays the drawn card
+        const idx = player.hand.length - 1;
+        const chosenColor = drawn.type.startsWith('wild') ? chooseCpuColor(player) : null;
+        setTimeout(() => playCardCommon(playerIndex, idx, chosenColor), 700);
+      } else {
+        // Human: highlight drawn card, let them play it manually (swipe up)
+        const cards = handArea.querySelectorAll('.card');
+        if (cards.length > 0) cards[cards.length - 1].classList.add('just-drawn');
+        awaitingDrawPlay = true;
       }
-      showToast(`${player.name}：引いたカードを自動でプレイ！`);
-      const idx = player.hand.length - 1;
-      let chosenColor = null;
-      if (drawn.type.startsWith('wild')) chosenColor = chooseCpuColor(player);
-      setTimeout(() => playCardCommon(playerIndex, idx, chosenColor), 700);
     } else {
       setTimeout(passTurnAfterDraw, 700);
     }
@@ -723,6 +744,8 @@ function handleNoPlayableTurn(playerIndex) {
 
 function passTurnAfterDraw() {
   if (gamePaused) return;
+  showPassEffect(currentPlayer);
+  awaitingDrawPlay = false;
   currentPlayer = nextPlayerIndex(currentPlayer);
   awaitingPass = multiHuman() && !players[currentPlayer].isCPU;
   advanceTurnFlow();
@@ -745,6 +768,7 @@ function handlePendingDraw(playerIndex) {
 
 // ============ Play Card ============
 function playCardCommon(playerIndex, handIdx, chosenColor) {
+  awaitingDrawPlay = false;
   const player = players[playerIndex];
   const card = player.hand.splice(handIdx, 1)[0];
   discard.push(card);

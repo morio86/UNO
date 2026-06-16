@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>UNO Tests</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body { overflow: auto; }
+  #results { white-space: pre-wrap; font-family: monospace; background: #111; color: #0f0; padding: 12px; }
+  #results.fail { color: #f55; }
+</style>
+</head>
+<body>
+
+<!-- Minimal copy of index.html structure so script.js's DOM lookups succeed -->
+<div id="title-screen" class="screen hidden">
+  <div class="title-logo"><h1>UNO</h1><p class="subtitle">マルチプレイバトル</p></div>
+  <div class="mode-block">
+    <p class="mode-title">CPU対戦</p>
+    <div class="player-select">
+      <button data-mode="cpu" data-num="1"><span class="num">1</span><span class="txt">人</span></button>
+      <button data-mode="cpu" data-num="2"><span class="num">2</span><span class="txt">人</span></button>
+      <button data-mode="cpu" data-num="3"><span class="num">3</span><span class="txt">人</span></button>
+    </div>
+  </div>
+  <div class="mode-block">
+    <p class="mode-title">同じ端末で対戦</p>
+    <div class="player-select">
+      <button data-mode="local" data-num="2" class="wide-btn"><span class="num">2</span><span class="txt">人で対戦</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="game-screen" class="screen hidden">
+  <button id="pause-btn">⏸</button>
+  <div id="turn-banner"></div>
+  <div id="rule-indicators" class="hidden"></div>
+  <div id="other-players"></div>
+  <div id="center-area">
+    <div class="pile-wrap">
+      <div id="draw-pile" class="card card-back"></div>
+      <span id="draw-count" class="pile-count">0</span>
+    </div>
+    <div class="pile-wrap"><div id="discard-pile"></div></div>
+  </div>
+  <div id="status-bar">
+    <span id="direction-indicator">→</span>
+  </div>
+  <div id="pending-draw-banner" class="hidden"><span>🃏 ドロー <strong id="pending-draw-num">0</strong> 枚待ち！</span></div>
+  <div id="action-area">
+    <button id="play-btn" class="hidden">出す</button>
+    <button id="uno-btn">UNO!</button>
+  </div>
+  <div id="uno-reach" class="hidden"></div>
+  <div id="hand-area"></div>
+</div>
+
+<div id="pause-overlay" class="hidden">
+  <button id="pause-resume"></button>
+  <button id="pause-quit"></button>
+</div>
+
+<div id="swap-dialog" class="hidden">
+  <div id="swap-choices"></div>
+</div>
+
+<div id="color-dialog" class="dialog hidden">
+  <div class="dialog-box">
+    <p>色を選んでください</p>
+    <div class="color-choices">
+      <button class="color-btn" data-color="red"></button>
+      <button class="color-btn" data-color="yellow"></button>
+      <button class="color-btn" data-color="green"></button>
+      <button class="color-btn" data-color="blue"></button>
+    </div>
+  </div>
+</div>
+
+<div id="challenge-dialog" class="dialog hidden">
+  <div class="dialog-box">
+    <p id="challenge-text"></p>
+    <div class="challenge-choices">
+      <button id="challenge-yes">チャレンジする</button>
+      <button id="challenge-no">そのまま引く</button>
+    </div>
+  </div>
+</div>
+
+<div id="pass-overlay" class="dialog hidden">
+  <div class="dialog-box">
+    <p id="pass-text"></p>
+    <button id="pass-ok">手札を見る</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div id="rules-panel" class="hidden">
+  <input type="checkbox" id="rule-stackSameNumber">
+  <input type="checkbox" id="rule-drawStacking">
+  <input type="checkbox" id="rule-zeroRotate">
+  <input type="checkbox" id="rule-sevenSwap">
+  <button id="rules-close"></button>
+  <button id="rules-btn"></button>
+</div>
+
+<div id="result-screen" class="screen hidden">
+  <h2 id="result-title"></h2>
+  <div id="result-list"></div>
+  <button id="restart-btn">もう一度プレイ</button>
+</div>
+
+<h1>UNO Logic Tests</h1>
+<pre id="results">running...</pre>
+
+<script>
+  // Capture setTimeout calls into a synchronous queue so the
+  // game can be driven turn-by-turn without real delays.
+  window.__timerQueue = [];
+  window.setTimeout = function (fn) { window.__timerQueue.push(fn); return 0; };
+  // Make requestAnimationFrame synchronous so animateDrawCard's callback
+  // fires immediately and the animation setTimeout gets captured.
+  window.requestAnimationFrame = function (fn) { fn(0); return 0; };
+</script>
+<script src="script.js"></script>
+<script src="tests/browser-test.js"></script>
+</body>
+</html>
