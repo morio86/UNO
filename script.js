@@ -15,6 +15,7 @@ let pendingWild4Challenge = null; // set when CPU plays wild_draw4 targeting hum
 let gameOver = false;
 let awaitingPass = false;   // true while waiting for the next human player to tap "see hand"
 let awaitingDrawPlay = false; // true after human drew forced card that is playable
+let noPlayTimerId = null;    // timer ID for auto-draw delay (so manual tap can cancel it)
 let gamePaused = false;
 
 // Draw stacking state
@@ -47,6 +48,7 @@ const resultScreen = document.getElementById('result-screen');
 const turnBanner = document.getElementById('turn-banner');
 const otherPlayersArea = document.getElementById('other-players');
 const drawCountEl = document.getElementById('draw-count');
+const drawPileEl = document.getElementById('draw-pile');
 const discardPileEl = document.getElementById('discard-pile');
 const directionIndicator = document.getElementById('direction-indicator');
 const handArea = document.getElementById('hand-area');
@@ -109,6 +111,7 @@ function startGame(numPlayers, mode) {
   pendingWild4Challenge = null;
   awaitingPass = false;
   awaitingDrawPlay = false;
+  clearTimeout(noPlayTimerId); noPlayTimerId = null;
   pendingDrawCount = 0;
   pendingDrawType = null;
 
@@ -342,6 +345,10 @@ function renderHand() {
       const canAdd = card.type === 'number' && card.value === firstSelected.value && cardMatches(card);
       if (canAdd) el.classList.add('addable');
     }
+    // Keep just-drawn glow persistent while awaiting draw play
+    if (awaitingDrawPlay && isMyTurn && idx === player.hand.length - 1) {
+      el.classList.add('just-drawn');
+    }
 
     // Desktop click
     el.addEventListener('click', () => onHandCardClick(idx));
@@ -380,6 +387,7 @@ function renderStatus() {
     return;
   }
 
+  const viewer = viewerIndex();
   const player = players[currentPlayer];
   const canDeclare = !awaitingPass && !player.isCPU && !player.unoDeclared &&
     (player.hand.length === 1 || player.hand.length === 2);
@@ -392,12 +400,24 @@ function renderStatus() {
     unoReach.classList.toggle('hidden', !viewerDeclared);
   }
 
-  if (pendingPlay.length > 0) {
+  if (awaitingDrawPlay) {
+    playBtn.classList.remove('hidden');
+    playBtn.textContent = 'パスする';
+    playBtn.dataset.mode = 'pass';
+  } else if (pendingPlay.length > 0) {
     playBtn.classList.remove('hidden');
     playBtn.textContent = `出す (${pendingPlay.length}枚)`;
+    playBtn.dataset.mode = 'play';
   } else {
     playBtn.classList.add('hidden');
+    playBtn.dataset.mode = '';
   }
+
+  // Pulse draw pile when it's human's turn and they must draw
+  const mustDraw = !gameOver && !awaitingPass && !awaitingDrawPlay
+    && !player.isCPU && !player.hand.some(c => cardMatches(c))
+    && pendingDrawCount === 0 && pendingWildCard === null && viewer === currentPlayer;
+  drawPileEl.classList.toggle('draw-prompt', mustDraw);
 }
 
 function renderPassOverlay() {
@@ -466,6 +486,29 @@ document.getElementById('pause-btn').addEventListener('click', pauseGame);
 document.getElementById('pause-resume').addEventListener('click', resumeGame);
 document.getElementById('pause-quit').addEventListener('click', quitToTitle);
 
+// Draw pile: tap/click to draw when human has no playable card
+function onDrawPileTap() {
+  if (gameOver || awaitingPass || gamePaused || awaitingDrawPlay) return;
+  if (pendingWildCard !== null) return;
+  const player = players[currentPlayer];
+  if (player.isCPU || currentPlayer !== viewerIndex()) return;
+  // Ignore taps when player has a playable card in hand
+  if (player.hand.some(c => cardMatches(c))) return;
+  // Cancel auto-draw timer and draw immediately
+  clearTimeout(noPlayTimerId); noPlayTimerId = null;
+  handleNoPlayableTurn(currentPlayer);
+}
+drawPileEl.addEventListener('click', onDrawPileTap);
+let drawPileTouchY = 0;
+drawPileEl.addEventListener('touchstart', (e) => {
+  drawPileTouchY = e.touches[0].clientY;
+  e.preventDefault();
+}, { passive: false });
+drawPileEl.addEventListener('touchend', (e) => {
+  const dy = e.changedTouches[0].clientY - drawPileTouchY;
+  if (Math.abs(dy) < 20) onDrawPileTap();
+});
+
 // ============ Turn flow ============
 function advanceTurnFlow() {
   if (gamePaused) return;
@@ -495,7 +538,7 @@ function advanceTurnFlow() {
   if (player.isCPU) {
     setTimeout(cpuTurn, 700);
   } else if (!awaitingDrawPlay && !player.hand.some(c => cardMatches(c))) {
-    setTimeout(() => handleNoPlayableTurn(currentPlayer), 600);
+    noPlayTimerId = setTimeout(() => handleNoPlayableTurn(currentPlayer), 600);
   }
 }
 
@@ -572,6 +615,11 @@ function onHandCardClick(idx) {
 }
 
 playBtn.addEventListener('click', () => {
+  if (playBtn.dataset.mode === 'pass') {
+    awaitingDrawPlay = false;
+    passTurnAfterDraw();
+    return;
+  }
   if (pendingPlay.length === 0) return;
   playSelectedCards();
 });
@@ -677,7 +725,7 @@ function showConfetti() {
 
 // ============ Draw card animation ============
 function animateDrawCard(callback) {
-  const pileEl = document.getElementById('draw-pile');
+  const pileEl = drawPileEl;
   const pileRect = pileEl.getBoundingClientRect();
   const handRect = handArea.getBoundingClientRect();
 
@@ -718,6 +766,7 @@ function showPassEffect(playerIndex) {
 // ============ Auto-draw when no playable card ============
 function handleNoPlayableTurn(playerIndex) {
   if (gamePaused) return;
+  clearTimeout(noPlayTimerId); noPlayTimerId = null;
   const player = players[playerIndex];
 
   animateDrawCard(() => {

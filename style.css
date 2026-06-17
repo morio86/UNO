@@ -908,6 +908,21 @@ body.bg-blue {
   border: 1px solid rgba(255,255,255,0.3);
 }
 
+/* ---------- Draw Pile Prompt ---------- */
+#draw-pile.draw-prompt {
+  cursor: pointer;
+  animation: drawPromptPulse 0.75s ease infinite alternate;
+}
+@keyframes drawPromptPulse {
+  from { box-shadow: 0 3px 6px rgba(0,0,0,0.4), 0 0 8px rgba(255,235,59,0.4); }
+  to   { box-shadow: 0 3px 6px rgba(0,0,0,0.4), 0 0 24px rgba(255,235,59,1); }
+}
+
+/* パスするボタン */
+#play-btn[data-mode="pass"] {
+  background: linear-gradient(135deg, #546e7a, #37474f);
+}
+
 /* ---------- Pass Effect ---------- */
 .pass-effect {
   position: fixed;
