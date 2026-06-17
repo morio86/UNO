@@ -461,6 +461,8 @@ body.bg-blue {
   min-height: 150px;
   align-items: center;
   gap: 4px;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ---------- Card ---------- */

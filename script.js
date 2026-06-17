@@ -356,20 +356,29 @@ function renderHand() {
     // Touch: hold to preview (enlarge), swipe up to play
     let touchStartY = 0;
     let touchStartX = 0;
+    let touchLocked = false; // true once gesture direction is decided
     el.addEventListener('touchstart', (e) => {
       touchStartY = e.touches[0].clientY;
       touchStartX = e.touches[0].clientX;
+      touchLocked = false;
       el.classList.add('touch-active');
-      e.preventDefault();
-    }, { passive: false });
+    }, { passive: true });
     el.addEventListener('touchmove', (e) => {
-      e.preventDefault();
+      const dy = Math.abs(e.touches[0].clientY - touchStartY);
+      const dx = Math.abs(e.touches[0].clientX - touchStartX);
+      if (!touchLocked && (dy > 6 || dx > 6)) {
+        touchLocked = true;
+      }
+      // Only block native scroll when swiping vertically (to play card)
+      if (touchLocked && dy > dx) {
+        e.preventDefault();
+      }
     }, { passive: false });
     el.addEventListener('touchend', (e) => {
       el.classList.remove('touch-active');
       const dy = e.changedTouches[0].clientY - touchStartY;
       const dx = e.changedTouches[0].clientX - touchStartX;
-      if (dy < -40 && Math.abs(dx) < 70) {
+      if (dy < -40 && Math.abs(dx) < 60) {
         onHandCardClick(idx);
       }
     });
